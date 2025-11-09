@@ -1,0 +1,281 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dyutimoy Majumder | Interactive Resume</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        /* Base styles for the cinematic effect */
+        body {
+            margin: 0;
+            height: 100vh;
+            /* Deep, dark radial background for contrast */
+            background: radial-gradient(circle at top left, #0f172a, #1e293b 60%, #111827);
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+            color: white;
+            cursor: none; /* Hide default cursor to use particle trail */
+        }
+
+        .title {
+            font-family: 'Poppins', sans-serif;
+            font-weight: 700;
+            font-size: clamp(2.5rem, 8vw, 4rem); /* Responsive font size */
+            /* Gradient that cycles hue */
+            background: linear-gradient(90deg, #60a5fa, #a78bfa, #f472b6, #60a5fa);
+            -webkit-background-clip: text;
+            color: transparent;
+            animation: hueShift 6s linear infinite, floatIn 1.2s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+            opacity: 0;
+            transform: translateY(30px);
+            letter-spacing: -0.05em;
+            text-shadow: 0 0 15px rgba(167, 139, 250, 0.4);
+        }
+
+        .subtitle {
+            font-size: clamp(1rem, 3vw, 1.25rem);
+            color: #cbd5e1;
+            margin-top: 0.5rem;
+            opacity: 0;
+            transform: translateY(30px);
+            animation: floatIn 1.2s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+            animation-delay: 0.3s;
+        }
+
+        .btn-wrapper {
+            opacity: 0;
+            transform: translateY(30px);
+            animation: floatIn 1.2s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+            animation-delay: 0.6s;
+        }
+
+        .btn {
+            padding: 0.9rem 2.5rem;
+            border-radius: 9999px;
+            font-weight: 600;
+            text-transform: uppercase;
+            /* Glow effect on button */
+            background: linear-gradient(90deg, #3b82f6, #9333ea);
+            color: white;
+            border: 2px solid transparent;
+            box-shadow: 0 0 25px rgba(147, 51, 234, 0.6), inset 0 0 10px rgba(255, 255, 255, 0.1);
+            transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        .btn:hover {
+            transform: scale(1.05) translateY(-3px);
+            box-shadow: 0 5px 30px rgba(147, 51, 234, 0.9), 0 0 3px #fff;
+            border-color: #a78bfa;
+        }
+
+        canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0; /* Particles below content */
+        }
+
+        .content {
+            position: relative;
+            z-index: 10; /* Content above particles */
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 2rem;
+            /* Ensure UI elements feel like they are floating */
+            transform-style: preserve-3d;
+        }
+
+        /* Keyframe animations for floating UI and hue cycling */
+        @keyframes hueShift {
+            from { filter: hue-rotate(0deg); }
+            to { filter: hue-rotate(360deg); }
+        }
+
+        @keyframes floatIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 🎨 Background Canvas for Particles and Effects -->
+    <canvas id="glowCanvas"></canvas>
+
+    <!-- ✨ Main Content - Floating UI -->
+    <div class="content">
+        <h1 class="title">Dyutimoy Majumder</h1>
+        <p class="subtitle mb-8">Ray of Light</p>
+        <div class="btn-wrapper flex flex-col sm:flex-row gap-4">
+            <a href="https://dyutimoy-create.github.io/portfolio/" class="btn" target="_blank">View My Interactive Resume</a>
+            <a href="https://dyutimoy-create.github.io/fireworks-show/" class="btn" target="_blank">Watch My Fireworks Project</a>
+        </div>
+    </div>
+
+    <!-- 🌈 Cinematic Particle Depth and Interaction Script -->
+    <script>
+        const canvas = document.getElementById('glowCanvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        let mouse = { x: null, y: null };
+        let mouseTrail = [];
+        const MAX_PARTICLES = 150; // Optimized cap
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            // Re-initialize particles on resize if needed, but for simplicity, we let the existing ones wrap/move
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        window.addEventListener('mousemove', (e) => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+        });
+
+        class Particle {
+            constructor(depth) {
+                this.depth = depth; // 0 = far back, 1 = close
+                this.reset();
+            }
+
+            reset() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 0.8 + 0.8; // Smaller base size
+                this.baseAlpha = Math.random() * 0.5 + 0.2;
+                this.alpha = this.baseAlpha;
+                this.pulseSpeed = Math.random() * 0.02 + 0.01;
+                this.pulseOffset = Math.random() * Math.PI * 2;
+                
+                // Subtle movement, random directions, scaled by depth
+                this.speedX = (Math.random() - 0.5) * 0.2 * (1 - this.depth); 
+                this.speedY = (Math.random() - 0.5) * 0.2 * (1 - this.depth);
+                
+                // Cursor interaction strength
+                this.followStrength = Math.random() * 0.8 + 0.2;
+                this.hue = Math.random() * 360;
+                this.hueShiftSpeed = Math.random() * 0.1 + 0.05; // Slower, subtle shift
+            }
+
+            update() {
+                // 1. Drifting background movement
+                this.x += this.speedX;
+                this.y += this.speedY;
+
+                // 2. Pulsing alpha (Glow effect)
+                this.alpha = this.baseAlpha + Math.sin(performance.now() * this.pulseSpeed + this.pulseOffset) * 0.15;
+
+                // 3. Hue cycling
+                this.hue += this.hueShiftSpeed;
+                if (this.hue >= 360) this.hue -= 360;
+
+                // 4. Cursor interaction (Orbit/Repel effect)
+                if (mouse.x && mouse.y) {
+                    const dx = mouse.x - this.x;
+                    const dy = mouse.y - this.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    const maxDist = 80 * (1 + this.depth); // Closer particles (high depth) react stronger
+
+                    if (dist < maxDist) {
+                        // Gently push the particle away from the cursor
+                        const force = (maxDist - dist) / maxDist;
+                        const angle = Math.atan2(dy, dx);
+                        
+                        // Movement is dampened by depth (farther particles move less)
+                        this.x -= Math.cos(angle) * force * this.followStrength * (1 + this.depth) * 0.8;
+                        this.y -= Math.sin(angle) * force * this.followStrength * (1 + this.depth) * 0.8;
+                    }
+                }
+
+                // 5. Wrap around edges (teleport to opposite side)
+                if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) {
+                    this.reset();
+                }
+            }
+
+            draw() {
+                const effectiveSize = this.size * (1 + this.depth * 2); // Deeper particles are larger (closer to viewer)
+                const color = `hsla(${this.hue}, 100%, 75%, ${this.alpha})`;
+                
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, effectiveSize, 0, Math.PI * 2);
+                ctx.fillStyle = color;
+                
+                // Glowing trail/effect
+                ctx.shadowColor = `hsla(${this.hue}, 100%, 80%, 1)`;
+                ctx.shadowBlur = 8 + this.alpha * 10 * (1 + this.depth);
+                
+                ctx.fill();
+            }
+        }
+
+        // Initialize particles with depth layers
+        for (let i = 0; i < MAX_PARTICLES; i++) {
+            // Depth ranges from 0 (far) to 1 (near)
+            const depth = Math.random();
+            particles.push(new Particle(depth));
+        }
+        
+        // Mouse trail logic
+        const updateMouseTrail = () => {
+            if (mouse.x !== null) {
+                // Add new point to the trail (lagging slightly)
+                mouseTrail.push({ x: mouse.x, y: mouse.y, hue: (mouseTrail.length > 0 ? mouseTrail[mouseTrail.length - 1].hue + 5 : Math.random() * 360) % 360 });
+            }
+            // Keep the trail length short for performance and visual effect
+            if (mouseTrail.length > 15) {
+                mouseTrail.shift();
+            }
+        };
+
+        const drawMouseTrail = () => {
+            for (let i = 0; i < mouseTrail.length; i++) {
+                const p = mouseTrail[i];
+                const alpha = i / mouseTrail.length; // Fade out the oldest points
+                const size = 2 + (i / mouseTrail.length) * 4;
+                const color = `hsla(${p.hue}, 100%, 70%, ${alpha * 0.8})`;
+
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, size, 0, Math.PI * 2);
+                ctx.fillStyle = color;
+                ctx.shadowColor = color;
+                ctx.shadowBlur = 10;
+                ctx.fill();
+            }
+            ctx.shadowBlur = 0; // Clear blur for the main particles/clearing
+        };
+
+        function animate() {
+            // Motion Blur/Glowing Trails effect: clear with a slight transparency
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.1)'; // Background color with low opacity
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Update and draw the mouse trail
+            updateMouseTrail();
+            drawMouseTrail();
+
+            // Draw particles (sorted by depth for proper layering)
+            particles.sort((a, b) => a.depth - b.depth);
+
+            particles.forEach(p => { 
+                p.update(); 
+                p.draw(); 
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+    </script>
+</body>
+</html>
